@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phần mềm tính tiền hợp đồng</title>
+<style>
+:root{--navy:#17324d;--blue:#2463a6;--bg:#f3f6fb;--orange:#ffc000;--green:#16845b;--ink:#1d2939;--muted:#667085}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#17324d,#2463a6);color:white;padding:28px 18px}
+.wrap{max-width:1050px;margin:auto;padding:0 16px}
+h1{margin:0 0 8px;font-size:clamp(24px,4vw,34px)} header p{margin:0;color:#e4edf8}
+main{padding:22px 0 36px}.intro{color:var(--muted);line-height:1.5;margin:0 0 18px}
+.layout{display:grid;grid-template-columns:1fr 1.2fr;gap:18px}
+.panel{background:white;border-radius:16px;padding:20px;box-shadow:0 5px 20px #1b355010;border:1px solid #e5eaf1}
+h2{font-size:19px;margin:0 0 16px;color:var(--navy)}
+.field{margin-bottom:16px}.field label{display:block;font-weight:700;margin-bottom:7px}
+.field small{display:block;color:var(--muted);margin-top:6px}
+input{width:100%;padding:13px 12px;border:2px solid #e5a900;background:#fff4cf;border-radius:10px;font-size:17px;font-weight:700;color:#5d4300;outline:none}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2463a620}
+.unit{position:relative}.unit span{position:absolute;right:12px;top:14px;color:#765d19;font-size:13px}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.result{padding:14px;border-radius:12px;background:#f7f9fc;border:1px solid #e7edf5;min-width:0}
+.result .label{font-size:13px;color:var(--muted);line-height:1.35;margin-bottom:8px}
+.result .value{font-size:clamp(16px,2.4vw,22px);font-weight:800;overflow-wrap:anywhere;color:var(--navy)}
+.result.highlight{background:#eaf7f0;border-color:#b8e4ce}.result.highlight .value{color:var(--green)}
+.result.wide{grid-column:1/-1}
+.summary{margin-top:16px;background:#f0f6ff;border-radius:12px;padding:14px;line-height:1.6}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{border:0;border-radius:10px;padding:12px 16px;font-size:15px;font-weight:700;cursor:pointer}
+.primary{background:var(--blue);color:white}.secondary{background:#e9eef5;color:var(--navy)}
+.note{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.5}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.panel{padding:16px}.results{gap:9px}.result{padding:12px}}
+@media print{header{background:white;color:#111;padding:10px 0}header p{color:#333}.layout{grid-template-columns:1fr 1fr}.panel{box-shadow:none;break-inside:avoid}.actions{display:none}body{background:white}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Phần mềm tính tiền hợp đồng</h1><p>Tự động tính thuế, lợi nhuận và phần chia cho Bên A / Công ty</p></div></header>
+<main class="wrap">
+<p class="intro">Chỉ nhập 3 ô màu vàng: <b>Tổng giá trị hợp đồng (đã gồm thuế)</b>, <b>Giá vốn (đã gồm thuế)</b> và <b>tỷ lệ chia cho Bên A</b>. Kết quả sẽ tự động cập nhật.</p>
+<div class="layout">
+<section class="panel">
+<h2>Thông tin đầu vào</h2>
+<div class="field"><label for="contract">Tổng giá trị trên hợp đồng (cả thuế)</label><div class="unit"><input id="contract" type="text" value="84.000.000" inputmode="numeric" autocomplete="off"><span>VNĐ</span></div></div>
+<div class="field"><label for="cost">Giá vốn (cả thuế)</label><div class="unit"><input id="cost" type="text" value="50.000.000" inputmode="numeric" autocomplete="off"><span>VNĐ</span></div></div>
+<div class="field"><label for="share">Tỷ lệ chia cho Bên A</label><div class="unit"><input id="share" type="text" value="20" inputmode="decimal" autocomplete="off"><span>%</span></div><small>Nhập tỷ lệ từ 0 đến 100.</small></div>
+<div class="actions"><button class="primary" id="reset">Khôi phục số mặc định</button><button class="secondary" onclick="window.print()">In kết quả</button></div>
+<p class="note">Công cụ mô phỏng các công thức trong bảng tính đã cung cấp. Thuế suất đang dùng theo bảng: GTGT 8%, TNDN 17%.</p>
+</section>
+<section class="panel">
+<h2>Kết quả tính toán</h2>
+<div class="results">
+<div class="result"><div class="label">Giá trước thuế</div><div class="value" id="net">—</div></div>
+<div class="result"><div class="label">Tổng thuế phải đóng</div><div class="value" id="taxTotal">—</div></div>
+<div class="result"><div class="label">Thuế GTGT đầu ra (8%)</div><div class="value" id="vatOut">—</div></div>
+<div class="result"><div class="label">Thuế đầu vào được trừ</div><div class="value" id="vatIn">—</div></div>
+<div class="result"><div class="label">Thuế GTGT phải đóng</div><div class="value" id="vatPay">—</div></div>
+<div class="result"><div class="label">Thuế TNDN (17%)</div><div class="value" id="cit">—</div></div>
+<div class="result wide"><div class="label">Lợi nhuận tổng trước chia</div><div class="value" id="profit">—</div></div>
+<div class="result highlight"><div class="label">Phần chia cho Bên A</div><div class="value" id="aShare">—</div></div>
+<div class="result highlight"><div class="label">Phần còn lại của Công ty</div><div class="value" id="company">—</div></div>
+</div>
+<div class="summary" id="summary">Nhập dữ liệu để xem kết quả.</div>
+</section>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Number.isFinite(n)?Math.round(n).toLocaleString('vi-VN')+' ₫':'—';
+function parseMoney(id){
+ const raw=$(id).value.trim().replace(/\\./g,'').replace(/,/g,'');
+ const n=Number(raw);
+ return Number.isFinite(n)&&n>=0?n:0;
+}
+function formatThousandsInput(input){
+ const old=input.value;
+ const pos=input.selectionStart ?? old.length;
+ const digitsBefore=(old.slice(0,pos).match(/\\d/g)||[]).length;
+ const digits=old.replace(/\\D/g,'');
+ const formatted=digits?Number(digits).toLocaleString('vi-VN'): '';
+ input.value=formatted;
+ let newPos=0, seen=0;
+ while(newPos<formatted.length && seen<digitsBefore){
+   if(/\\d/.test(formatted[newPos])) seen++;
+   newPos++;
+ }
+ try{input.setSelectionRange(newPos,newPos)}catch(e){}
+}
+function calculate(){
+ const contract=Math.max(0,Number($('contract').value)||0);
+ const cost=Math.max(0,Number($('cost').value)||0);
+ const share=Math.min(100,Math.max(0,Number($('share').value)||0));
+ const net=contract/1.08;
+ const vatOut=net*0.08;
+ const vatIn=(cost/1.08)*0.08;
+ const vatPay=vatOut-vatIn;
+ const cit=((contract-cost)/1.08)*0.17;
+ const taxTotal=vatPay+cit;
+ const profit=((contract-cost)/1.08)-vatPay-cit;
+ const aShare=(net*share)/100;
+ const company=profit-aShare;
+ const vals={net,taxTotal,vatOut,vatIn,vatPay,cit,profit,aShare,company};
+ for(const [id,val] of Object.entries(vals)) $(id).textContent=fmt(val);
+ $('summary').innerHTML=`<b>Tóm tắt:</b> Giá trị hợp đồng <b>${fmt(contract)}</b>; giá vốn <b>${fmt(cost)}</b>; tỷ lệ Bên A <b>${share}%</b>. `+
+ (contract<cost?'<br><b style="color:#b42318">Lưu ý:</b> Giá vốn đang cao hơn giá trị hợp đồng.':'')+
+ (share>100?'<br>Tỷ lệ đã được giới hạn ở 100%.':'');
+}
+['contract','cost','share'].forEach(id=>$(id).addEventListener('input',calculate));
+$('reset').addEventListener('click',()=>{$('contract').value=84000000;$('cost').value=50000000;$('share').value=20;calculate()});
+calculate();
+</script>
+</body>
+</html>
